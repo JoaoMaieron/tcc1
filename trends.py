@@ -1,5 +1,4 @@
 # Uso da biblioteca pytrends para baixar dados do Google trends
-import pandas as pd
 from pytrends.request import TrendReq
 
 pytrend = TrendReq() # Configura a conexao com a Google
