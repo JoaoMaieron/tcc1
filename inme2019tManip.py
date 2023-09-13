@@ -54,42 +54,78 @@ def inmetD(directory,uf,year):
             if dfDay['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'].isna().all():
                 new['temp_media'].append(0)
             else:
-                dfDay['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'] = df['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
-                new['temp_media'].append(round(np.mean([t  for t in dfDay['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'] if not math.isnan(float(t))]),2))
+                # dfDay['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'] = df['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
+                l = []
+                for t in dfDay['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)']:
+                    if type(t) == str:
+                        l.append(float(t.replace(',','.')))
+                    elif not math.isnan(t):
+                        l.append(t)
+                new['temp_media'].append(round(np.mean(l),2))
 
             if dfDay['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'].isna().all():
                 new['temp_max'].append(0)
             else:
-                dfDay['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'] = df['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
-                new['temp_max'].append(round(np.max([t for t in dfDay['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'] if not math.isnan(t)]),2))
+                # dfDay['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'] = df['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
+                l = []
+                for t in dfDay['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)']:
+                    if type(t) == str:
+                        l.append(float(t.replace(',','.')))
+                    elif not math.isnan(t):
+                        l.append(t)
+                new['temp_max'].append(np.max(l))
 
             if dfDay['TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)'].isna().all():
                 new['temp_min'].append(0)
             else:
-                dfDay['TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)'] = df['TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
-                new['temp_min'].append(np.min([t for t in dfDay['TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)'] if not math.isnan(t)]))
+                # dfDay['TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)'] = df['TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
+                l = []
+                for t in dfDay['TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)']:
+                    if type(t) == str:
+                        l.append(float(t.replace(',','.')))
+                    elif not math.isnan(t):
+                        l.append(t)
+                new['temp_min'].append(np.min(l))
             
             if dfDay['PRECIPITAÇÃO TOTAL, HORÁRIO (mm)'].isna().all():
                 new['prec_media'].append(0)
             else:
-                dfDay['PRECIPITAÇÃO TOTAL, HORÁRIO (mm)'] = df['PRECIPITAÇÃO TOTAL, HORÁRIO (mm)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
-                new['prec_media'].append(round(np.mean([t for t in dfDay['PRECIPITAÇÃO TOTAL, HORÁRIO (mm)'] if not math.isnan(t)]),2))
+                # dfDay['PRECIPITAÇÃO TOTAL, HORÁRIO (mm)'] = df['PRECIPITAÇÃO TOTAL, HORÁRIO (mm)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
+                l = []
+                for t in dfDay['PRECIPITAÇÃO TOTAL, HORÁRIO (mm)']:
+                    if type(t) == str:
+                        l.append(float(t.replace(',','.')))
+                    elif not math.isnan(t):
+                        l.append(t)
+                new['prec_media'].append(round(np.mean(l),2))
 
             if dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'].isna().all():
                 new['umid_media'].append(0)
             else:
-                dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'] = df['UMIDADE RELATIVA DO AR, HORARIA (%)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
-                new['umid_media'].append(round(np.mean([t for t in dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'] if not math.isnan(t)]),2))
+                # dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'] = df['UMIDADE RELATIVA DO AR, HORARIA (%)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
+                # new['umid_media'].append(round(np.mean([t for t in dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'] if not math.isnan(t)]),2))
+                l = []
+                for t in dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)']:
+                    if type(t) == str:
+                        l.append(float(t.replace(',','.')))
+                    elif not math.isnan(t):
+                        l.append(t)
+                new['umid_media'].append(round(np.mean(l),2))
 
             if dfDay['VENTO, VELOCIDADE HORARIA (m/s)'].isna().all():
                 new['vento_medio'].append(0)
             else:
-                dfDay['VENTO, VELOCIDADE HORARIA (m/s)'] = df['VENTO, VELOCIDADE HORARIA (m/s)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
-                new['vento_medio'].append(round(np.mean([t for t in dfDay['VENTO, VELOCIDADE HORARIA (m/s)'] if not math.isnan(t)]),2))
-
+                # dfDay['VENTO, VELOCIDADE HORARIA (m/s)'] = df['VENTO, VELOCIDADE HORARIA (m/s)'].apply(lambda x: float(x.replace(',','.')) if isinstance(x, str) else x)
+                l = []
+                for t in dfDay['VENTO, VELOCIDADE HORARIA (m/s)']:
+                    if type(t) == str:
+                        l.append(float(t.replace(',','.')))
+                    elif not math.isnan(t):
+                        l.append(t)
+                new['vento_medio'].append(round(np.mean(l),2))
+        print('.',end='')
         pd.DataFrame.to_csv(pd.DataFrame.from_dict(new), path_or_buf='./' + year + '/' + uf + '/' + file.split('\\')[-1] + '.csv')
         
-
 # Precisa remover as primeiras oito linhas dos csv, senão o pandas nao abre eles
 def removeLines(path):
     ufs = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
@@ -106,8 +142,7 @@ def removeLines(path):
                         f.write(line)
 
 def inmetManip(path,year):
-    ufs = ['DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
-    # 'AC','AL','AM','AP','BA','CE',
+    ufs = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
     for u in ufs:
         inmetD(path + u + '/',u,year)
         print(u,' pronto')
@@ -116,13 +151,13 @@ def inmetManip(path,year):
 
 # removeLines('../dados_inmet/2019/')
 
-inmetManip('../dados_inmet/2019/','2019')
+# inmetManip('../dados_inmet/2019/','2019')
 
 # removeLines('../dados_inmet/2020/')
 # inmetManip('../dados_inmet/2020/','2020')
 
-# removeLines('../dados_inmet/2021/')
-# inmetManip('../dados_inmet/2021/','2021')
+removeLines('../dados_inmet/2021/')
+inmetManip('../dados_inmet/2021/','2021')
 
-# removeLines('../dados_inmet/2022/')
-# inmetManip('../dados_inmet/2022/','2022')
+removeLines('../dados_inmet/2022/')
+inmetManip('../dados_inmet/2022/','2022')
