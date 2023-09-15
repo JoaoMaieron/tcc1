@@ -3,12 +3,83 @@ import numpy as np
 import glob
 import os
 
-def inmetD(directory,uf,year):
+ufs = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
+
+calendar = [
+    ('2010/01/03','2011/01/01'),
+    ('2011/01/01','2011/12/31'),
+    ('2012/01/01','2012/12/29'),
+    ('2012/12/30','2013/12/28'),
+    ('2013/12/29','2015/01/03'),
+    ('2015/01/04','2016/01/02'),
+    ('2016/01/03','2016/12/31'),
+    ('2017/01/01','2017/12/30'),
+    ('2017/12/31','2018/12/29'),
+    ('2018/12/30','2019/12/28'),
+    ('2019/12/29','2021/01/02'),
+    ('2021/01/03','2022/01/01'),
+    ('2022/01/02','2022/12/31')
+]
+
+
+def createFolders():
+    for u in ufs:
+        os.mkdir('C:\\Users\\joaom\\OneDrive\\Área de Trabalho\\tcc\\dados_tratamento\\csv_inmet\\novos'+'\\'+u)
+
+def concatCSV(directory,uf):
+    '''
+    directory = formato './csv_inmet/novos/
+    uf = formato 'AM'
+    '''
+    # Para cada estado juntar tudo os csv de mesmo local - verifica pelos 16 primeiros caracteres do filename
+    # - abre a pasta de 2010;
+    # - pra cada arquivo nela, avançar 2011 pra diante procurando pelo mesmo filename e concatenar se encontrar
+    # - importante pegar todos os anos que a estação existe, botar no filename do csv final (trata os caso qque a estação fechou)
+    
+    years = ['2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022']
+    checked = [] # Cria uma lista pra guardar os arqs que já checou
+    for y in years:
+        yearsahead = [t for t in years if int(t) > int(y)]
+        
+        #'./csv_inmet/novos/
+        # Pega todos os csv da pasta
+        # csv_files_ini = glob.glob(os.path.join(directory + uf + '/', "*.csv"))
+        
+        # Pra cada ano vou abrir a lista dos arqs que contém
+        csv_files_ini = glob.glob(os.path.join(directory + y + '/' + uf + '/', "*.csv"))
+        for file in csv_files_ini:
+            filename = file.split('\\')[-1][:16] # Os 16 primeiros caracteres são o que identifica cada estação
+            
+            # Só faço alguma coisa se o arq atual não foi verificado ainda, o que significa uma estação que abriu pós 2010
+            if filename not in checked:
+                yrs_available =  '_' + y + '_'
+                df = pd.read_csv(file).drop(['Unnamed: 0'],axis=1)
+                for y2 in yearsahead:
+                    # Pra cada ano adiante vai na pasta dele e pega tudo os nome de arq
+                    csv_files_y = glob.glob(os.path.join('./csv_inmet/original/'+ y2 + '/' + uf + '/', '*.csv')) 
+                    for f in csv_files_y:
+                        if f.split('\\')[-1][:16] == filename: # Caso encontra a estação correspondente, concatena os dataframe
+                            df2 = pd.read_csv(f).drop(['Unnamed: 0'],axis=1)
+                            df = pd.concat([df,df2],axis=0)
+                            yrs_available = yrs_available + y2 + '_'
+                checked.append(filename) # Insere o arq na lista dos que já foi
+                pd.DataFrame.to_csv(df,path_or_buf='./csv_inmet/novos/'+ uf + '/' + filename + yrs_available + '.csv')
+
+        # './csv_inmet/original/2010/AC/'
+        # './csv_inmet/novos/2010/AC/'
+
+for u in ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']:
+    concatCSV('./csv_inmet/original/',u)
+
+# createFolders()
+
+def inmetManip(directory,uf,year):
 
     # até GO funcionou
     # alteracao uma linha, até MA pronto
     # alteracao uma linha, até MG pronto
 
+    # Pega todos os csv da pasta
     csv_files = glob.glob(os.path.join(directory, "*.csv"))
 
     for file in csv_files:
@@ -103,12 +174,9 @@ def inmetD(directory,uf,year):
                     new['vento_medio'].append(round(np.mean([t for t in dfDay['VENTO, VELOCIDADE HORARIA (m/s)'] if t != -9999]),2))
 
         pd.DataFrame.to_csv(pd.DataFrame.from_dict(new), path_or_buf='./' + year + '/' + uf + '/' + file.split('\\')[-1] + '.csv')
-        
 
 # Precisa remover as primeiras oito linhas dos csv, senão o pandas nao abre eles
 def removeLines(path):
-    ufs = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
-
     for u in ufs:
         folder = path + u + '/'
         for filename in os.listdir(folder):
@@ -121,21 +189,22 @@ def removeLines(path):
                         f.write(line)
 
 def inmetManip(path,year):
-    ufs = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
     for u in ufs:
-        inmetD(path + u + '/',u,year)
+        inmetManip(path + u + '/',u,year)
         print(u,' pronto')
+
+# concatCSV('./csv_inmet/original/2010/','AC')
 
 # De 2019 em diante mudaram os nomes das colunas
 
-removeLines('../dados_inmet/2019/')
-inmetManip('../dados_inmet/2019/','2019')
+# removeLines('../dados_inmet/2019/')
+# inmetManip('../dados_inmet/2019/','2019')
 
-removeLines('../dados_inmet/2020/')
-inmetManip('../dados_inmet/2020/','2020')
+# removeLines('../dados_inmet/2020/')
+# inmetManip('../dados_inmet/2020/','2020')
 
-removeLines('../dados_inmet/2021/')
-inmetManip('../dados_inmet/2021/','2021')
+# removeLines('../dados_inmet/2021/')
+# inmetManip('../dados_inmet/2021/','2021')
 
-removeLines('../dados_inmet/2022/')
-inmetManip('../dados_inmet/2022/','2022')
+# removeLines('../dados_inmet/2022/')
+# inmetManip('../dados_inmet/2022/','2022')
