@@ -23,19 +23,20 @@ calendar = [
 
 
 def createFolders():
+    '''
+    Só pra criar denovo as pasta tudo pra cada estado.
+    '''
     for u in ufs:
         os.mkdir('C:\\Users\\joaom\\OneDrive\\Área de Trabalho\\tcc\\dados_tratamento\\csv_inmet\\novos'+'\\'+u)
 
 def concatCSV(directory,uf):
     '''
-    directory = formato './csv_inmet/novos/
-    uf = formato 'AM'
+    Args:
+        directory (str): caminho da pasta, formato './csv_inmet/novos/
+        uf (str): sigla de estado, formato 'AM'
     '''
     # Para cada estado juntar tudo os csv de mesmo local - verifica pelos 16 primeiros caracteres do filename
-    # - abre a pasta de 2010;
-    # - pra cada arquivo nela, avançar 2011 pra diante procurando pelo mesmo filename e concatenar se encontrar
-    # - importante pegar todos os anos que a estação existe, botar no filename do csv final (trata os caso qque a estação fechou)
-    
+   
     years = ['2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022']
     checked = [] # Cria uma lista pra guardar os arqs que já checou
     for y in years:
@@ -65,22 +66,25 @@ def concatCSV(directory,uf):
                 checked.append(filename) # Insere o arq na lista dos que já foi
                 pd.DataFrame.to_csv(df,path_or_buf='./csv_inmet/novos/'+ uf + '/' + filename + yrs_available + '.csv')
 
-        # './csv_inmet/original/2010/AC/'
-        # './csv_inmet/novos/2010/AC/'
-
-for u in ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']:
-    concatCSV('./csv_inmet/original/',u)
+# for u in ufs:
+#     concatCSV('./csv_inmet/original/',u)
 
 # createFolders()
 
 def inmetManip(directory,uf,year):
+    '''
+    Pré-processamento dos csv obtidos do site do inmet.
+    Pega só as colunas relevantes pro tcc e faz um tratamento dos dados delas.
+    Args:
+        directory (str): caminho da pasta onde estao os csv, formato '../dados_inmet/2019/RS/'
+        uf (str): sigla do estado, formato 'RS'
+        year (str): ano formato '2011'
 
-    # até GO funcionou
-    # alteracao uma linha, até MA pronto
-    # alteracao uma linha, até MG pronto
-
+    '''
     # Pega todos os csv da pasta
     csv_files = glob.glob(os.path.join(directory, "*.csv"))
+
+    print(year)
 
     for file in csv_files:
         '''
@@ -88,10 +92,11 @@ def inmetManip(directory,uf,year):
         > a data né (coluna 'DATA (YYYY-MM-DD)')
         > temperatura média (coluna 'TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)')
         > temperatura máxima (coluna 'TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)')
-        > temperatura mínima (coluna 'TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)') -> ignorar os valores -9999
+        > temperatura mínima (coluna 'TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)')
         > precipitação média (coluna 'PRECIPITAÇÃO TOTAL, HORÁRIO (mm)')
         > umidade relativa média (coluna 'UMIDADE RELATIVA DO AR, HORARIA (%)') -> nem sei se faz sentido isso, talvez tirar depois
         > velocidade média vento (coluna 'VENTO, VELOCIDADE HORARIA (m/s)')
+        > vento rajada maxima (coluna 'VENTO, RAJADA MAXIMA (m/s)')
         '''
         new = {
             'data' : [],
@@ -100,7 +105,8 @@ def inmetManip(directory,uf,year):
             'temp_min' : [],
             'prec_media' : [],
             'umid_media' : [],
-            'vento_medio' : []
+            'vento_medio' : [],
+            'vento_max' : []
         }
         
         # A leitura dos csv do inmet nao funcionou com o encoding padrao, entao foi com esse latin-1
@@ -109,25 +115,19 @@ def inmetManip(directory,uf,year):
 
         # Quando algum campo não foi feita a leitura, o default é -9999
         # Aqui to pegando a quantidade de default por linha pra excluir linhas lixo depois
-        invalid_lines = (df == '-9999').sum(axis=1)
-        # Eu defini como linha lixo aquelas que têm pelo menos três campos sem valor
-
-        for i in range(len(invalid_lines)-1,0,-1):
-            if invalid_lines[i] >= 3:
-                df.drop(i, inplace=True)
-        
-        # for index, row in df.iterrows():
-        #     if invalid_lines[index] >= 3:
-        #         df.drop(df.index[index], inplace=True)
+        # invalid_lines = (df == '-9999').sum(axis=1)
+        # # Eu defini como linha lixo aquelas que têm pelo menos três campos sem valor
+        # for i in range(len(invalid_lines)-1,0,-1):
+        #     if invalid_lines[i] >= 3:
+        #         df.drop(i, inplace=True)
 
         for d in df['DATA (YYYY-MM-DD)'].unique():
             # Bota todas as linhas de um dia específico em um df auxiliar
             dfDay = df[df['DATA (YYYY-MM-DD)'] == d]
 
-            # Inserindo os dados no dicionário por ordem:
             new['data'].append(d)
 
-            # Também precisa verificar para cada um se há pelo menos um valor válido
+            # Precisa verificar para cada um se há pelo menos um valor válido
             if dfDay['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'].value_counts().get('-9999',0) == dfDay['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'].count() or dfDay['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'].value_counts().get(-9999,0) == dfDay['TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)'].count():
                 new['temp_media'].append(0)
             else:
@@ -163,7 +163,7 @@ def inmetManip(directory,uf,year):
             if dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'].value_counts().get('-9999',0) == dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'].count() or dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'].value_counts().get(-9999,0) == dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'].count():
                 new['umid_media'].append(0)
             else:
-                new['umid_media'].append(round(np.mean([t for t in dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)']]),2))
+                new['umid_media'].append(round(np.mean([t for t in dfDay['UMIDADE RELATIVA DO AR, HORARIA (%)'] if t >= 0]),2))
 
             if dfDay['VENTO, VELOCIDADE HORARIA (m/s)'].value_counts().get('-9999',0) == dfDay['VENTO, VELOCIDADE HORARIA (m/s)'].count() or dfDay['VENTO, VELOCIDADE HORARIA (m/s)'].value_counts().get(-9999,0) == dfDay['VENTO, VELOCIDADE HORARIA (m/s)'].count():
                 new['vento_medio'].append(0)
@@ -173,10 +173,21 @@ def inmetManip(directory,uf,year):
                 else:
                     new['vento_medio'].append(round(np.mean([t for t in dfDay['VENTO, VELOCIDADE HORARIA (m/s)'] if t != -9999]),2))
 
+            if dfDay['VENTO, RAJADA MAXIMA (m/s)'].value_counts().get('-9999',0) == dfDay['VENTO, RAJADA MAXIMA (m/s)'].count() or dfDay['VENTO, RAJADA MAXIMA (m/s)'].value_counts().get(-9999,0) == dfDay['VENTO, RAJADA MAXIMA (m/s)'].count():
+                new['vento_max'].append(0)
+            else:
+                if type(df['VENTO, RAJADA MAXIMA (m/s)'][0]) == str: # Os do MT tavam como int e nao string
+                    new['vento_max'].append(round(np.mean([float(t.replace(',','.')) for t in dfDay['VENTO, RAJADA MAXIMA (m/s)'] if t != '-9999']),2))
+                else:
+                    new['vento_max'].append(round(np.mean([t for t in dfDay['VENTO, RAJADA MAXIMA (m/s)'] if t != -9999]),2))
+
+        print('.',end='')
         pd.DataFrame.to_csv(pd.DataFrame.from_dict(new), path_or_buf='./' + year + '/' + uf + '/' + file.split('\\')[-1] + '.csv')
 
-# Precisa remover as primeiras oito linhas dos csv, senão o pandas nao abre eles
 def removeLines(path):
+    '''
+    Remove as primeiras oito linhas do csv, senao o pandas nao abre eles direito
+    '''
     for u in ufs:
         folder = path + u + '/'
         for filename in os.listdir(folder):
@@ -188,7 +199,7 @@ def removeLines(path):
                     if number not in range(0,8):
                         f.write(line)
 
-def inmetManip(path,year):
+def inmetAAA(path,year):
     for u in ufs:
         inmetManip(path + u + '/',u,year)
         print(u,' pronto')
@@ -200,11 +211,12 @@ def inmetManip(path,year):
 # removeLines('../dados_inmet/2019/')
 # inmetManip('../dados_inmet/2019/','2019')
 
-# removeLines('../dados_inmet/2020/')
-# inmetManip('../dados_inmet/2020/','2020')
-
-# removeLines('../dados_inmet/2021/')
-# inmetManip('../dados_inmet/2021/','2021')
-
-# removeLines('../dados_inmet/2022/')
-# inmetManip('../dados_inmet/2022/','2022')
+# inmetAAA('../dados_inmet/2010/','2010')
+# inmetAAA('../dados_inmet/2011/','2011')
+# inmetAAA('../dados_inmet/2012/','2012')
+# inmetAAA('../dados_inmet/2013/','2013')
+# inmetAAA('../dados_inmet/2014/','2014')
+# inmetAAA('../dados_inmet/2015/','2015')
+# inmetAAA('../dados_inmet/2016/','2016')
+# inmetAAA('../dados_inmet/2017/','2017')
+# inmetAAA('../dados_inmet/2018/','2018')
