@@ -4,30 +4,65 @@ import glob
 import os
 
 ufs = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
-
+years = [str(n) for n in range(2010,2023)]
 calendar = [
-    ('2010/01/03','2011/01/01'),
-    ('2011/01/01','2011/12/31'),
-    ('2012/01/01','2012/12/29'),
-    ('2012/12/30','2013/12/28'),
-    ('2013/12/29','2015/01/03'),
-    ('2015/01/04','2016/01/02'),
-    ('2016/01/03','2016/12/31'),
-    ('2017/01/01','2017/12/30'),
-    ('2017/12/31','2018/12/29'),
-    ('2018/12/30','2019/12/28'),
-    ('2019/12/29','2021/01/02'),
-    ('2021/01/03','2022/01/01'),
-    ('2022/01/02','2022/12/31')
+    ('2010-01-03','2011-01-01'),
+    ('2011-01-01','2011-12-31'),
+    ('2012-01-01','2012-12-29'),
+    ('2012-12-30','2013-12-28'),
+    ('2013-12-29','2015-01-03'),
+    ('2015-01-04','2016-01-02'),
+    ('2016-01-03','2016-12-31'),
+    ('2017-01-01','2017-12-30'),
+    ('2017-12-31','2018-12-29'),
+    ('2018-12-30','2019-12-28'),
+    ('2019-12-29','2021-01-02'),
+    ('2021-01-03','2022-01-01'),
+    ('2022-01-02','2022-12-31')
 ]
 
+def finalVersion(directory,uf):
+    '''
+    O objetivo é deixar um csv só por estado
+    Args:
+        directory (str): caminho da pasta, formato './csv_inmet/novos/
+        uf (str): sigla de estado, formato 'AM'
+    '''
+    files = glob.glob(os.path.join(directory + uf,'*.csv'))
+    df = pd.read_csv(files[0]).drop(['Unnamed: 0'],axis=1)
+    # Aqui eu transformo os zero tudo em nan pra nao ferrar o cálculo da média depois
+    df[df[['temp_media','temp_max','temp_min','prec_media','umid_media','vento_medio','vento_max']] == 0] = np.nan
+    if len(files) > 1:
+        for i in range(1,len(files)):
+            df0 = pd.read_csv(files[i]).drop(['Unnamed: 0'],axis=1) # Tirando a coluna inútil
+            df = pd.concat([df,df0],axis=0)
+        
+        # Isso aqui é um jeitinho lindo de agrupar o df por data, aplicando uma função diferente por coluna
+        df = df.groupby('data').agg({
+            'temp_media': np.nanmean,
+            'temp_max':np.nanmax,
+            'temp_min':np.nanmin,
+            'prec_media':np.nanmean,
+            'umid_media':np.nanmean,
+            'vento_medio':np.nanmean,
+            'vento_max':np.nanmax})
+    # Dando aquela truncada braba pra ficar mais bonito os csv
+    df[['temp_media','prec_media','umid_media','vento_medio']] = df[['temp_media','prec_media','umid_media','vento_medio']].apply(lambda x: round(number=x,ndigits=2),axis=1)
+    pd.DataFrame.to_csv(df,path_or_buf='./csv_inmet/' + uf + '.csv')
 
+def finalAAAA():
+    for u in ufs:
+        finalVersion('./csv_inmet/novos/',u)
+
+finalAAAA()
 def createFolders():
     '''
     Só pra criar denovo as pasta tudo pra cada estado.
     '''
     for u in ufs:
-        os.mkdir('C:\\Users\\joaom\\OneDrive\\Área de Trabalho\\tcc\\dados_tratamento\\csv_inmet\\novos'+'\\'+u)
+        os.mkdir('C:\\Users\\joaom\\OneDrive\\Área de Trabalho\\tcc\\dados_tratamento\\csv_inmet\\novos\\'+u)
+
+# createFolders()
 
 def concatCSV(directory,uf):
     '''
@@ -35,10 +70,8 @@ def concatCSV(directory,uf):
         directory (str): caminho da pasta, formato './csv_inmet/novos/
         uf (str): sigla de estado, formato 'AM'
     '''
-    # Para cada estado juntar tudo os csv de mesmo local - verifica pelos 16 primeiros caracteres do filename
-   
-    years = ['2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022']
-    checked = [] # Cria uma lista pra guardar os arqs que já checou
+    checked = [] # Lista pra guardar os arqs que já checou
+
     for y in years:
         yearsahead = [t for t in years if int(t) > int(y)]
         
@@ -68,8 +101,6 @@ def concatCSV(directory,uf):
 
 # for u in ufs:
 #     concatCSV('./csv_inmet/original/',u)
-
-# createFolders()
 
 def inmetManip(directory,uf,year):
     '''
@@ -203,10 +234,6 @@ def inmetAAA(path,year):
     for u in ufs:
         inmetManip(path + u + '/',u,year)
         print(u,' pronto')
-
-# concatCSV('./csv_inmet/original/2010/','AC')
-
-# De 2019 em diante mudaram os nomes das colunas
 
 # removeLines('../dados_inmet/2019/')
 # inmetManip('../dados_inmet/2019/','2019')
