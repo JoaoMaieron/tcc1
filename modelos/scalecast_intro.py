@@ -15,16 +15,9 @@ from scalecast.util import gen_rnn_grid
 from tensorflow.keras.callbacks import EarlyStopping
 from scalecast import GridGenerator
 
-
-
 casos_mg = pd.read_csv('../dados_versao_final/doencas/MG.csv')
 tempo_mg = pd.read_csv('../dados_versao_final/meteorologicos/MG.csv',parse_dates=True, index_col='data')
 
-
-
-
-
-# Grafico bonito pra printar
 import matplotlib.dates as mdates
 fig, ax = plt.subplots(figsize=(10,6))
 ax.xaxis.set_major_locator(mdates.AutoDateLocator())
@@ -37,9 +30,35 @@ ax.legend()
 plt.tight_layout()
 plt.show()
 
+# Instanciando um forecaster para cada var
+def createForecaster(y,current_dates,future_dates,estimator):
+    return Forecaster(y=y, current_dates=current_dates, future_dates=future_dates,estimator=estimator)
+
+future_dates = 52
+estimator = 'lstm'
+test_length = .15
 
 
+f_casos = createForecaster(casos_mg['casos'], tempo_mg.index, future_dates,estimator)
+f_tmed = createForecaster(tempo_mg['temp_media'], tempo_mg.index, future_dates,estimator)
+f_umid = createForecaster(tempo_mg['umid_media'], tempo_mg.index, future_dates,estimator)
 
+f_casos.seasonal_decompose().plot()
+plt.show()
+
+f_casos.plot()
+plt.show()
+
+transformer = SeriesTransformer(f_casos)
+f_casos = transformer.MinMaxTransform(train_only=True)
+
+mvf = MVForecaster(
+    f_casos,
+    f_tmed,
+    f_umid,
+    test_length=test_length,
+    metrics=['rmse','r2']
+    )
 
 
 
@@ -57,12 +76,12 @@ f_casos = Forecaster(y=casos_mg['casos'],current_dates=tempo_mg.index,future_dat
 
 # OS AMIGUES
 f_tmed = Forecaster(y=tempo_mg['temp_media'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
-f_tmax = Forecaster(y=tempo_mg['temp_max'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
-f_tmin = Forecaster(y=tempo_mg['temp_min'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
-f_prec = Forecaster(y=tempo_mg['prec'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
+# f_tmax = Forecaster(y=tempo_mg['temp_max'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
+# f_tmin = Forecaster(y=tempo_mg['temp_min'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
+# f_prec = Forecaster(y=tempo_mg['prec'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
 f_umid = Forecaster(y=tempo_mg['umid_media'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
-f_vento = Forecaster(y=tempo_mg['vento'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
-var_list = [f_tmed,f_tmax,f_tmin,f_prec,f_umid,f_vento]
+# f_vento = Forecaster(y=tempo_mg['vento'],current_dates=tempo_mg.index,future_dates=104,test_length=.15)
+# var_list = [f_tmed,f_tmax,f_tmin,f_prec,f_umid,f_vento]
 
 # SEASONAL REGRESSORS ESTAO AI PARA CAPTURAR PADROES SAZONAIS
 def add_vars(f,**kwargs):
