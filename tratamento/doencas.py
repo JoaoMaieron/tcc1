@@ -13,34 +13,37 @@ UFCodes = {
 years = [str(n) for n in range(2010,2023)]
 
 dfPenis = pd.read_csv('./doencas/AL.csv')
-semanas = dfPenis['Semana'].values
+semanas = dfPenis['semana'].values # ISSO AQUI É IMPORTANTISSIMO POIS VAI SER A INDEX DOS DATAFRAME
 
 #==============================================================================
 # PRE PROCESSAMENTO
 #==============================================================================
 
 # Pegando só as colunas relevantes
-folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_em_tratamento\\xablau2\\'
+# INICIA COM OS CSV CRU DO SINAN
+folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_brutos\\dados_sinan\\'
 csv_files = [file for file in os.listdir(folder_path)]
 for file in csv_files:
     file_path = os.path.join(folder_path,file)
     df = pd.read_csv(file_path)
+    df = df[~df['CLASSI_FIN'].isin([5, 13])]
     df0 = df[['SEM_NOT','DT_NOTIFIC','SEM_PRI','SG_UF_NOT','DT_OBITO']].copy()
-    df0.to_csv('../dados_em_tratamento/xablau/'+file+'.csv',index=False)
+    df0.to_csv('../dados_brutos/a/'+file+'.csv',index=False)
 
-file = '../dados_em_tratamento/xablau/DENGBR18.csv.csv'
+# file = '../dados_em_tratamento/xablau/DENGBR18.csv.csv'
 
 # PARA 2020 TAVA TUDO ERRADO O CSV ????
 # O nome das colunas tava errado, aqui corrige
-df = pd.read_csv('../dados_em_tratamento/xablau/DENGBR20.csv.csv')
+df = pd.read_csv('../dados_brutos/dados_sinan/DENGBR20.csv')
+df = df[~df['CLASSI_FIN'].isin([5, 13])]
 df0 = df[['DT_NOTIFIC','SEM_PRI','SG_UF_NOT','DT_OBITO']].copy()
 df0 = df0[df0['SEM_PRI'] > 202000] # EU ESQUECI DE ARRUMAR AQUI, NAO CONTA PRA NGM
 df0['SEM_PRI'] = df0['SEM_PRI'].astype(int)
 df0 = df0.rename(columns={'SEM_PRI':'SEM_NOT'})
-df0.to_csv(path_or_buf='../dados_em_tratamento/xablau/DENGBR20.csv',index=False)
+df0.to_csv(path_or_buf='../dados_brutos/dados_sinan/DENGBR20.csv',index=False)
 
-# Concatenando em um gigantao
-folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_em_tratamento\\xablau\\'
+# Concatenando todos em um gigantao
+folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_brutos\\a\\'
 csv_files = [file for file in os.listdir(folder_path)]
 dfs = []    
 for file in csv_files:
@@ -48,24 +51,50 @@ for file in csv_files:
     df = pd.read_csv(file_path)
     dfs.append(df)
 result_df = pd.concat(dfs, ignore_index=True)
-result_df.to_csv('../dados_em_tratamento/xablau/DENGUE.csv',index=False)
-# Separando por UF bonitinho
-df = pd.read_csv('../dados_em_tratamento/xablau/DENGUE.csv')
+result_df.to_csv('../dados_brutos/DENGUE.csv',index=False)
 
-# O do ES tem que fazer isso manualmente, nao rola nesse laco (?)
+# Ha uma inconsistencia no codigo das semanas, aqui corrige
+df = pd.read_csv('../dados_brutos/DENGUE.csv')
+mask = df['SEM_NOT'] < 200000
+df.loc[mask, 'SEM_NOT'] += 200000
+df = df[df['SEM_NOT'] > 200952]
+df = df[df['SEM_NOT'] < 202301]
+df.to_csv('../dados_brutos/DENGUE.csv',index=False)
+# Ainda com o acima aberto, faz esse laco pra separar por estado
 for uf in UFCodes.keys():
     df0 = df[df['SG_UF_NOT'] == uf]
-    mask = df0['SEM_NOT'] < 200000
-    df0.loc[mask, 'SEM_NOT'] += 200000
+    df0.to_csv('../dados_brutos/b/'+UFCodes[uf]+'.csv',index=False)
+
+# O do ES tem que fazer isso manualmente, nao rola nesse laco (?)
+# refiz e funciona sim, ignora o comentário acima
+# Abaixo, é feita a agregação por semana
+for uf in UFCodes.keys():
+    df0 = pd.read_csv('../dados_brutos/b/'+UFCodes[uf]+'.csv')
+    df0 = df0.sort_values(by='SEM_NOT')
     df0 = df0.groupby(df0['SEM_NOT']).count()
-    df0.to_csv(UFCodes[uf]+'.csv',index=True)
-    
-    
-for uf in UFCodes.values():
-    df = pd.read_csv('../dados_em_tratamento/xablau2/'+uf+'.csv')
-    df = df.rename(columns={'SEM_NOT':'semana','DT_OBITO':'obitos','SG_UF_NOT':'casos'})
-    df = df.drop(['DT_NOTIFIC','SEM_PRI'],axis=1)
-    df.to_csv('../dados_em_tratamento/xablau2/'+uf+'.csv',index=False)
+    df0 = df0.drop(['SEM_PRI','SG_UF_NOT'],axis=1)
+    df0 = df0.rename(columns={'DT_NOTIFIC':'casos','DT_OBITO':'obitos'})
+    # for s in semanas:
+    #     if s not in df0['semana'].values:
+    #         df0.append({'semana':s,'casos':0,'obitos':0},ignore_index=True)
+    # df0 = df0.sort_values('semana')
+    df0.to_csv('../dados_brutos/c/'+UFCodes[uf]+'.csv',index=True)
+
+
+
+df = pd.read_csv('../dados_brutos/c/RO.csv')
+df = df.rename(columns={'SEM_NOT':'semana'})
+
+# Finalmente é só trocar o nome da coluna das semanas, inserir semanas que faltam
+for uf in UFCodes.keys():
+    df = pd.read_csv('../dados_brutos/c/'+UFCodes[uf]+'.csv')
+    df = df.rename(columns={'SEM_NOT':'semana'})
+    for s in semanas:
+        if s not in df['semana'].values:
+            new_line = {'semana':s,'casos':0,'obitos':0}
+            df.loc[len(df)] = new_line
+    df = df.sort_values('semana')    
+    df.to_csv('../dados_brutos/d/'+UFCodes[uf]+'.csv',index=False)
     
 # Contagem por semana pra casos e obitos
 folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_em_tratamento\\xablau2\\'
