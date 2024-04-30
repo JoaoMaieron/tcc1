@@ -22,7 +22,6 @@ names = ['Brasil','Acre','Alagoas','Amapá','Amazonas','Bahia','Ceará','Distrit
 # Início e fim de cada ano epidemiológico que vou pesquisar, de 2010 a 2022
 years = ['2010-01-03 2011-01-01',
          '2011-01-02 2011-12-31',
-         '2012-01-01 2012-12-29',
          '2012-12-30 2013-12-28',
          '2013-12-29 2015-01-03',
          '2015-01-04 2016-01-02',
