@@ -10,6 +10,13 @@ UFCodes = {
     41 : 'PR', 42 : 'SC', 43 : 'RS',
     50 : 'MS', 51 : 'MT', 52 : 'GO', 53 : 'DF'
 }
+
+
+# UFCodes = {
+#     32 : 'ES'
+# }
+
+
 years = [str(n) for n in range(2010,2023)]
 
 dfPenis = pd.read_csv('./doencas/AL.csv')
@@ -26,7 +33,8 @@ csv_files = [file for file in os.listdir(folder_path)]
 for file in csv_files:
     file_path = os.path.join(folder_path,file)
     df = pd.read_csv(file_path)
-    df = df[~df['CLASSI_FIN'].isin([5, 13])]
+    if 'CLASSI_FIN' in df.columns.values:
+        df = df[~df['CLASSI_FIN'].isin([5, 13])]
     df0 = df[['SEM_NOT','DT_NOTIFIC','SEM_PRI','SG_UF_NOT','DT_OBITO']].copy()
     df0.to_csv('../dados_brutos/a/'+file+'.csv',index=False)
 
@@ -43,7 +51,8 @@ df0 = df0.rename(columns={'SEM_PRI':'SEM_NOT'})
 df0.to_csv(path_or_buf='../dados_brutos/dados_sinan/DENGBR20.csv',index=False)
 
 # Concatenando todos em um gigantao
-folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_brutos\\a\\'
+# folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_brutos\\a\\'
+folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\modelos_LSTM\\TESTE\\a\\'
 csv_files = [file for file in os.listdir(folder_path)]
 dfs = []    
 for file in csv_files:
@@ -51,7 +60,7 @@ for file in csv_files:
     df = pd.read_csv(file_path)
     dfs.append(df)
 result_df = pd.concat(dfs, ignore_index=True)
-result_df.to_csv('../dados_brutos/DENGUE.csv',index=False)
+result_df.to_csv('metricas.csv',index=False)
 
 # Ha uma inconsistencia no codigo das semanas, aqui corrige
 df = pd.read_csv('../dados_brutos/DENGUE.csv')
@@ -109,17 +118,48 @@ for file in csv_files:
     dfs.append(df_weekly)
     df_weekly.to_csv('../dados_em_tratamento/xablau/'+file,index=True)
 
-folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_em_tratamento\\xablau\\'
+#==============================================================================
+# ESQUEMA PRA GRAFICO DE TUDO OS CASO
+
+df_nilso['casos'].sum()
+
+folder_path = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_versao_final\\doencas\\'
 csv_files = [file for file in os.listdir(folder_path)]
 dfs = []
 for file in csv_files:
     file_path = os.path.join(folder_path,file)
     df = pd.read_csv(file_path)
     dfs.append(df)
+df_nilso = pd.concat(dfs)
+df_nilso = df_nilso.groupby('semana').agg({'casos':'sum','obitos':'sum'})
+df_nilso = df_nilso.drop([200952])
 
+folder_path2 = 'C:\\Users\\joaom\\Desktop\\tcc\\dados\\dados_versao_final\\doencas_so_confirmados\\'
+csv_files2 = [file for file in os.listdir(folder_path)]
+csv_files2.remove('RR.csv')
+dfs2 = []
+for file in csv_files2:
+    file_path = os.path.join(folder_path2,file)
+    df = pd.read_csv(file_path)
+    dfs2.append(df)
+df_nilso2 = pd.concat(dfs2)
+df_nilso2 = df_nilso2.groupby('semana').agg({'casos':'sum','obitos':'sum'})
+df_nilso2 = df_nilso2.drop([200952])
+
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(12,8))
+ax.plot(df_nilso.index,df_nilso['casos'],color='blue',label='Total de casos relatados')
+ax.plot(df_nilso.index,df_nilso2['casos'],color='red',label='Casos marcados como confirmados')
+ax.set_xlabel('Semana epidemiológica')
+ax.set_ylabel('Número de casos')
+ax.set_title('Casos de dengue no Brasil, entre 2010 e 2022')
+ax.legend()
+plt.grid(True)
+plt.show()
+
+#==============================================================================
 
 peido = df0.groupby(df0['DT_NOTIFIC']).count()
-
 
 
 moita = pd.read_csv('../dados_em_tratamento/xablau/ES.csv')
